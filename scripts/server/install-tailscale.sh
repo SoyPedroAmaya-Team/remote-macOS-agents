@@ -20,9 +20,9 @@ install_tailscale_server() {
 		log_success "Tailscale already installed"
 
 		# Check if logged in
-		local status=$(tailscale status --json 2>/dev/null | grep -o '"LoggedIn":[^,]*' | cut -d: -f2 || echo "false")
-
-		if [[ "$status" == "true" ]]; then
+		if tailscale status 2>&1 | grep -q "Logged out"; then
+			log_warning "Tailscale not logged in"
+		else
 			log_success "Tailscale is already logged in"
 			return 0
 		fi
@@ -45,20 +45,33 @@ install_tailscale_server() {
 		fi
 	fi
 
-	# Start Tailscale
-	log_info "Starting Tailscale service..."
-	sudo tailscaled install
-
-	log_info "Please authenticate with Tailscale:"
-	log_info "  tailscale up --accept-routes"
-	echo ""
-
-	# Prompt for auth key or interactive login
-	if confirm "Do you have an auth key to use?" "n"; then
-		prompt_input "Enter your Tailscale auth key" AUTH_KEY "" "^tskey-auth-[a-zA-Z0-9-]+$"
-		tailscale up --authkey="$AUTH_KEY" --accept-routes
+	# On macOS, Tailscale app handles the daemon
+	if [[ "$(uname)" == "Darwin" ]]; then
+		log_info "On macOS, Tailscale runs as an app."
+		log_info "Open Tailscale app and log in if not already done."
+		
+		if confirm "Is Tailscale logged in?" "y"; then
+			return 0
+		else
+			log_error "Please log in to Tailscale first"
+			return 1
+		fi
 	else
-		tailscale up --accept-routes
+		# Linux/other - use tailscaled
+		log_info "Starting Tailscale service..."
+		sudo tailscaled install
+
+		log_info "Please authenticate with Tailscale:"
+		log_info "  tailscale up --accept-routes"
+		echo ""
+
+		# Prompt for auth key or interactive login
+		if confirm "Do you have an auth key to use?" "n"; then
+			prompt_input "Enter your Tailscale auth key" AUTH_KEY "" "^tskey-auth-[a-zA-Z0-9-]+$"
+			tailscale up --authkey="$AUTH_KEY" --accept-routes
+		else
+			tailscale up --accept-routes
+		fi
 	fi
 
 	log_success "Tailscale started"
@@ -75,9 +88,8 @@ setup_magicdns() {
 	fi
 
 	# Check if logged in
-	local status=$(tailscale status --json 2>/dev/null)
-	if ! echo "$status" | grep -q '"LoggedIn":true'; then
-		log_error "Tailscale not logged in. Please run 'tailscale up' first."
+	if tailscale status 2>&1 | grep -q "Logged out"; then
+		log_error "Tailscale not logged in. Please open Tailscale app and log in first."
 		return 1
 	fi
 
@@ -88,7 +100,7 @@ setup_magicdns() {
 	log_success "MagicDNS configured"
 	echo ""
 	echo -e "  ${BOLD}Access this server at:${NC}"
-	echo -e "  ${GREEN}https://${magicdns_hostname}${NC}"
+	echo -e "  ${GREEN}${magicdns_hostname}${NC}"
 	echo ""
 
 	# Update config
