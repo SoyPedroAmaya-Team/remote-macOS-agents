@@ -30,7 +30,8 @@ setup_ssh_keys() {
 		log_success "SSH key found: ${found_key}"
 
 		if confirm "Use existing key?" "y"; then
-			SSH_KEY_TYPE="$found_key"
+			# found_key is "id_ed25519" but ssh-keygen needs "ed25519"
+			SSH_KEY_TYPE="${found_key#id_}"
 		fi
 	fi
 

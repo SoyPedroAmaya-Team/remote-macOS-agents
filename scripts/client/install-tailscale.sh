@@ -52,7 +52,7 @@ install_tailscale_client() {
 	if [[ "$(uname)" == "Darwin" ]]; then
 		log_info "On macOS, Tailscale runs as an app."
 		log_info "Open Tailscale app and log in if not already done."
-		
+
 		if confirm "Is Tailscale logged in?" "y"; then
 			return 0
 		else
