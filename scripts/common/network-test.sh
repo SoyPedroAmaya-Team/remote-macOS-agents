@@ -72,8 +72,8 @@ test_web_panel() {
 
 # Run all tests (client perspective)
 test_all_client() {
-	local server_host
-	server_host="$(get_magicdns_hostname)"
+	# Use SERVER_HOSTNAME directly (could be IP or MagicDNS)
+	local server_host="${SERVER_HOSTNAME:-$(get_magicdns_hostname)}"
 
 	log_header "Running Connectivity Tests"
 

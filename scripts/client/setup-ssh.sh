@@ -76,10 +76,14 @@ setup_server_connection() {
 	log_header "Server Connection Setup"
 
 	# Ask for server hostname
+	# Ask for server hostname (may be IP or MagicDNS)
 	prompt_input "Server hostname (or IP)" SERVER_HOSTNAME "$SERVER_HOSTNAME"
 
 	# Ask for username
 	prompt_input "Username on server" SERVER_USER "$SERVER_USER"
+
+	# Save the hostname/IP as-is (don't try to resolve MagicDNS)
+	update_config "SERVER_HOSTNAME" "$SERVER_HOSTNAME"
 
 	# Update config
 	update_config "SERVER_HOSTNAME" "$SERVER_HOSTNAME"
