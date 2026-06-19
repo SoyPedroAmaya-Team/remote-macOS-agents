@@ -22,34 +22,34 @@ export BULLET="${MAGENTA}•${NC}"
 
 # Logging functions
 log_success() {
-    echo -e "${CHECK} $1"
+	echo -e "${CHECK} $1"
 }
 
 log_error() {
-    echo -e "${CROSS} $1" >&2
+	echo -e "${CROSS} $1" >&2
 }
 
 log_warning() {
-    echo -e "${WARN} $1"
+	echo -e "${WARN} $1"
 }
 
 log_info() {
-    echo -e "${ARROW} $1"
+	echo -e "${ARROW} $1"
 }
 
 log_header() {
-    echo -e "\n${CYAN}${BOLD}═══ $1 ═══${NC}"
+	echo -e "\n${CYAN}${BOLD}═══ $1 ═══${NC}"
 }
 
 log_step() {
-    echo -e "\n${BULLET} ${BOLD}$1${NC}"
+	echo -e "\n${BULLET} ${BOLD}$1${NC}"
 }
 
 log_text() {
-    echo -e "  $1"
+	echo -e "  $1"
 }
 
 # Section separator
 separator() {
-    echo -e "${BLUE}─────────────────────────────────────────────${NC}"
+	echo -e "${BLUE}─────────────────────────────────────────────${NC}"
 }
