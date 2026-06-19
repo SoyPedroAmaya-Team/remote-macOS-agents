@@ -1,0 +1,76 @@
+# SSH Server Configuration for Remote macOS Agents
+# Copy to /etc/ssh/sshd_config or /etc/ssh/sshd_config.d/remote-macos-agents.conf
+
+# =============================================================================
+# Security Settings
+# =============================================================================
+
+# Disable root login
+PermitRootLogin no
+
+# Disable password authentication (keys only)
+PasswordAuthentication no
+PermitEmptyPasswords no
+
+# Public key authentication
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+
+# Allow specific user only
+AllowUsers pedro
+
+# =============================================================================
+# Connection Settings
+# =============================================================================
+
+# Keepalive to prevent connections from dropping
+ClientAliveInterval 300
+ClientAliveCountMax 3
+
+# Disable empty passwords
+PermitUserEnvironment no
+
+# Limit connections
+MaxAuthTries 3
+MaxSessions 10
+
+# =============================================================================
+# Logging
+# =============================================================================
+
+# LogLevel VERBOSE gives more info about failed auth attempts
+LogLevel VERBOSE
+
+# =============================================================================
+# Subsystems
+# =============================================================================
+
+# SFTP subsystem
+Subsystem sftp /usr/libexec/sftp-server
+
+# =============================================================================
+# macOS Specific
+# =============================================================================
+
+# Use macOS keychain for passwords (not applicable with PasswordAuthentication no)
+# UseKeychain yes
+
+# Don't read ~/.rhosts and ~/.shosts
+IgnoreRhosts yes
+
+# Disable host-based authentication
+HostbasedAuthentication no
+
+# =============================================================================
+# macOS Note
+# =============================================================================
+# On macOS, SSH server is controlled via:
+#   sudo systemsetup -getremotelogin
+#   sudo systemsetup -f setremotelogin on
+#   sudo systemsetup -f setremotelogin off
+#
+# The sshd_config on macOS is at:
+#   /etc/ssh/sshd_config
+#
+# After modifying, reload with:
+#   sudo launchctl kickstart -k system/com.openssh.sshd
