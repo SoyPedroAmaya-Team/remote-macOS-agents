@@ -104,8 +104,8 @@ test_all_server() {
 
 	local failed=0
 
-	# Test SSH server
-	if launchctl list | grep -q "com.openssh.sshd"; then
+	# Test SSH server (check port 22 with sudo lsof)
+	if sudo lsof -i :22 &>/dev/null; then
 		log_success "SSH server enabled"
 	else
 		log_error "SSH server disabled"
