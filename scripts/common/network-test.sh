@@ -90,10 +90,10 @@ test_all_client() {
 	echo ""
 
 	if [[ $failed -eq 0 ]]; then
-		log_header "All Tests Passed ✓"
+		log_header "All Tests Passed"
 		return 0
 	else
-		log_header "Some Tests Failed !"
+		log_header "Some Tests Failed"
 		return 1
 	fi
 }
@@ -105,7 +105,7 @@ test_all_server() {
 	local failed=0
 
 	# Test SSH server
-	if sudo systemsetup -getremotelogin | grep -q "On"; then
+	if launchctl list | grep -q "com.openssh.sshd"; then
 		log_success "SSH server enabled"
 	else
 		log_error "SSH server disabled"
@@ -114,12 +114,11 @@ test_all_server() {
 
 	# Test Tailscale
 	if command -v tailscale &>/dev/null; then
-		local ts_status=$(tailscale status --json 2>/dev/null)
-		if echo "$ts_status" | grep -q '"LoggedIn":true'; then
-			log_success "Tailscale logged in"
-		else
+		if tailscale status 2>&1 | grep -q "Logged out"; then
 			log_error "Tailscale not logged in"
 			failed=1
+		else
+			log_success "Tailscale logged in"
 		fi
 	else
 		log_error "Tailscale not installed"

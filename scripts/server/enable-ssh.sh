@@ -13,8 +13,8 @@ source "${SCRIPT_DIR}/../../lib/utils.sh"
 enable_ssh_server() {
 	log_header "Enabling SSH Remote Login"
 
-	# Check if already enabled
-	if sudo systemsetup -getremotelogin 2>/dev/null | grep -q "On"; then
+	# Check if already enabled using launchctl
+	if launchctl list | grep -q "com.openssh.sshd"; then
 		log_success "SSH Remote Login is already enabled"
 		return 0
 	fi
@@ -24,14 +24,16 @@ enable_ssh_server() {
 	if confirm "Enable SSH Remote Login?" "y"; then
 		log_info "Enabling SSH Remote Login..."
 
-		# Enable Remote Login (SSH)
-		sudo systemsetup -f setremotelogin on
+		# Enable Remote Login via launchctl (no Full Disk Access needed)
+		sudo launchctl load -w /System/Library/LaunchDaemons/ssh.plist
 
 		# Verify
-		if sudo systemsetup -getremotelogin | grep -q "On"; then
+		sleep 1
+		if launchctl list | grep -q "com.openssh.sshd"; then
 			log_success "SSH Remote Login enabled successfully"
 		else
 			log_error "Failed to enable SSH Remote Login"
+			log_info "Try manually: System Settings → General → Sharing → Enable Remote Login"
 			return 1
 		fi
 	else
