@@ -51,6 +51,12 @@ update_config() {
 	local key="$1"
 	local value="$2"
 
+	mkdir -p "$CONFIG_DIR"
+
+	if [[ ! -f "$CONFIG_FILE" ]]; then
+		touch "$CONFIG_FILE"
+	fi
+
 	if grep -q "^${key}=" "$CONFIG_FILE" 2>/dev/null; then
 		sed -i '' "s|^${key}=.*|${key}=\"${value}\"|" "$CONFIG_FILE"
 	else

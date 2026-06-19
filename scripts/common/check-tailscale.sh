@@ -23,7 +23,7 @@ check_tailscale() {
 
 	# Check if logged in (use text status, more reliable on macOS)
 	local status_text=$(tailscale status 2>&1 || echo "")
-	
+
 	if echo "$status_text" | grep -q "Logged out"; then
 		log_warning "Tailscale is installed but not logged in"
 		echo -e "  Run: ${BOLD}tailscale up${NC}"
