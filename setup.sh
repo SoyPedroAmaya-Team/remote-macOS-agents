@@ -277,7 +277,7 @@ setup_client() {
 	# 2. Setup SSH
 	echo ""
 	"${REPO_DIR}/scripts/client/setup-ssh.sh" keys
-	
+
 	# 3. Force update server connection (always ask for hostname)
 	echo ""
 	log_info "Updating server connection..."

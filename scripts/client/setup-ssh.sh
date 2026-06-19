@@ -75,19 +75,22 @@ setup_ssh_keys() {
 setup_server_connection() {
 	log_header "Server Connection Setup"
 
-	# Ask for server hostname
 	# Ask for server hostname (may be IP or MagicDNS)
 	prompt_input "Server hostname (or IP)" SERVER_HOSTNAME "$SERVER_HOSTNAME"
 
 	# Ask for username
 	prompt_input "Username on server" SERVER_USER "$SERVER_USER"
 
-	# Save the hostname/IP as-is (don't try to resolve MagicDNS)
-	update_config "SERVER_HOSTNAME" "$SERVER_HOSTNAME"
-
-	# Update config
-	update_config "SERVER_HOSTNAME" "$SERVER_HOSTNAME"
-	update_config "SERVER_USER" "$SERVER_USER"
+	# Save to config file directly
+	mkdir -p "$CONFIG_DIR"
+	cat > "$CONFIG_FILE" << EOF
+# Remote macOS Agents Configuration
+ROLE="client"
+SERVER_HOSTNAME="${SERVER_HOSTNAME}"
+SERVER_USER="${SERVER_USER}"
+PANEL_PORT="8080"
+TAILSCALE_HOSTNAME="macmini"
+EOF
 
 	log_success "Server configured: ${SERVER_USER}@${SERVER_HOSTNAME}"
 }
