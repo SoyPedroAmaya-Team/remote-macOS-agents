@@ -262,6 +262,7 @@ setup_client() {
 	echo "  2. Setup SSH keys"
 	echo "  3. Configure server connection"
 	echo "  4. Copy SSH key to server"
+	echo "  5. Run connectivity tests"
 	echo ""
 
 	if ! confirm "Continue with client setup?"; then
@@ -276,9 +277,13 @@ setup_client() {
 	# 2. Setup SSH
 	echo ""
 	"${REPO_DIR}/scripts/client/setup-ssh.sh" keys
+	
+	# 3. Force update server connection (always ask for hostname)
+	echo ""
+	log_info "Updating server connection..."
 	"${REPO_DIR}/scripts/client/setup-ssh.sh" server
 
-	# 3. Copy key to server
+	# 4. Copy key to server
 	echo ""
 	"${REPO_DIR}/scripts/client/setup-ssh.sh" copy
 
