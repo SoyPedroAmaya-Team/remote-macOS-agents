@@ -13,27 +13,45 @@ source "${SCRIPT_DIR}/../../lib/utils.sh"
 enable_ssh_server() {
 	log_header "Enabling SSH Remote Login"
 
-	# Check if already enabled using launchctl
-	if launchctl list | grep -q "com.openssh.sshd"; then
-		log_success "SSH Remote Login is already enabled"
+	# Check if already enabled using netstat or lsof
+	if lsof -i :22 &>/dev/null; then
+		log_success "SSH Remote Login is already enabled (port 22 in use)"
 		return 0
 	fi
 
 	log_info "This will allow SSH connections to this Mac."
 
 	if confirm "Enable SSH Remote Login?" "y"; then
-		log_info "Enabling SSH Remote Login..."
-
-		# Enable Remote Login via launchctl (no Full Disk Access needed)
-		sudo launchctl load -w /System/Library/LaunchDaemons/ssh.plist
-
-		# Verify
-		sleep 1
-		if launchctl list | grep -q "com.openssh.sshd"; then
+		# Try launchctl first
+		log_info "Trying to enable SSH via launchctl..."
+		sudo launchctl load -w /System/Library/LaunchDaemons/ssh.plist 2>/dev/null
+		
+		sleep 2
+		
+		# Check if it worked
+		if lsof -i :22 &>/dev/null; then
 			log_success "SSH Remote Login enabled successfully"
+			return 0
+		fi
+
+		# If launchctl failed, ask user to enable manually
+		log_error "Could not enable SSH automatically."
+		echo ""
+		echo "Please enable SSH manually:"
+		echo "  1. Click Apple menu → System Settings"
+		echo "  2. Go to General → Sharing"
+		echo "  3. Enable 'Remote Login'"
+		echo ""
+		
+		if confirm "Has SSH been enabled manually?" "y"; then
+			if lsof -i :22 &>/dev/null; then
+				log_success "SSH is now enabled"
+				return 0
+			else
+				log_error "SSH still not enabled"
+				return 1
+			fi
 		else
-			log_error "Failed to enable SSH Remote Login"
-			log_info "Try manually: System Settings → General → Sharing → Enable Remote Login"
 			return 1
 		fi
 	else
