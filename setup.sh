@@ -167,12 +167,11 @@ check_shared_requirements() {
 			;;
 		"Tailscale")
 			if command -v tailscale &>/dev/null; then
-				local status=$(tailscale status --json 2>/dev/null | grep -o '"LoggedIn":[^,]*' | cut -d: -f2 || echo "false")
-				if [[ "$status" == "true" ]]; then
-					echo -e "${GREEN}OK${NC}"
-				else
+				if tailscale status 2>&1 | grep -q "Logged out"; then
 					echo -e "${YELLOW}NOT LOGGED IN${NC}"
 					failed=1
+				else
+					echo -e "${GREEN}OK${NC}"
 				fi
 			else
 				echo -e "${RED}NOT INSTALLED${NC}"
