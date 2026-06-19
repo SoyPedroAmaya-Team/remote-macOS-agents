@@ -14,7 +14,7 @@ enable_ssh_server() {
 	log_header "Enabling SSH Remote Login"
 
 	# Check if already enabled using netstat or lsof
-	if lsof -i :22 &>/dev/null; then
+	if sudo lsof -i :22 &>/dev/null; then
 		log_success "SSH Remote Login is already enabled (port 22 in use)"
 		return 0
 	fi
@@ -25,11 +25,11 @@ enable_ssh_server() {
 		# Try launchctl first
 		log_info "Trying to enable SSH via launchctl..."
 		sudo launchctl load -w /System/Library/LaunchDaemons/ssh.plist 2>/dev/null
-		
+
 		sleep 2
-		
+
 		# Check if it worked
-		if lsof -i :22 &>/dev/null; then
+		if sudo lsof -i :22 &>/dev/null; then
 			log_success "SSH Remote Login enabled successfully"
 			return 0
 		fi
@@ -42,9 +42,9 @@ enable_ssh_server() {
 		echo "  2. Go to General → Sharing"
 		echo "  3. Enable 'Remote Login'"
 		echo ""
-		
+
 		if confirm "Has SSH been enabled manually?" "y"; then
-			if lsof -i :22 &>/dev/null; then
+			if sudo lsof -i :22 &>/dev/null; then
 				log_success "SSH is now enabled"
 				return 0
 			else
