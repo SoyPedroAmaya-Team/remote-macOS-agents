@@ -287,21 +287,26 @@ setup_client() {
 	echo ""
 	"${REPO_DIR}/scripts/client/setup-ssh.sh" copy
 
-	# Save final config
-	save_config
+	# Reload config after setup-ssh.sh wrote it
+	load_config
 
-	# Tests
+	# Tests - use SERVER_HOSTNAME directly
 	if [[ "$SKIP_TESTS" == "false" ]]; then
 		echo ""
-		"${REPO_DIR}/scripts/common/network-test.sh" client
+		log_info "Testing connection to ${SERVER_USER}@${SERVER_HOSTNAME}..."
+		if ssh -o ConnectTimeout=5 "${SERVER_USER}@${SERVER_HOSTNAME}" "echo 'SSH OK'" &>/dev/null; then
+			log_success "SSH connection successful!"
+		else
+			log_error "SSH connection failed"
+		fi
 	fi
 
 	log_header "Client Setup Complete!"
 	echo ""
-	echo -e "  ${BOLD}Server:${NC} ${SERVER_USER}@$(get_magicdns_hostname)"
+	echo -e "  ${BOLD}Server:${NC} ${SERVER_USER}@${SERVER_HOSTNAME}"
 	echo ""
 	log_info "You can now SSH to the server with:"
-	echo -e "  ${BOLD}ssh ${SERVER_USER}@$(get_magicdns_hostname)${NC}"
+	echo -e "  ${BOLD}ssh ${SERVER_USER}@${SERVER_HOSTNAME}${NC}"
 }
 
 # =============================================================================

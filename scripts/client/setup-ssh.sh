@@ -83,7 +83,7 @@ setup_server_connection() {
 
 	# Save to config file directly
 	mkdir -p "$CONFIG_DIR"
-	cat > "$CONFIG_FILE" << EOF
+	cat >"$CONFIG_FILE" <<EOF
 # Remote macOS Agents Configuration
 ROLE="client"
 SERVER_HOSTNAME="${SERVER_HOSTNAME}"
