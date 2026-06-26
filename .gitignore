@@ -1,2 +1,25 @@
 # Local Pi runtime state
 .atl/
+
+# Homebrew
+.DS_Store
+
+# macOS
+.AppleDouble
+.LSOverride
+._*
+
+# IDE
+.idea/
+*.swp
+*.swo
+.vscode/
+
+# Local configuration (machine-specific)
+Brewfile.lock.json
+.bundle/
+
+# chezmoi generated (these are managed by chezmoi apply)
+~/.local/share/chezmoi/
+~/.config/chezmoi/
+

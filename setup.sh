@@ -32,16 +32,22 @@ ${BOLD}Usage:${NC}
     $0 [OPTIONS]
 
 ${BOLD}Options:${NC}
-    --role=ROLE       Force role: 'server' or 'client'
-    --skip-checks     Skip requirement checks
-    --skip-tests      Skip connectivity tests
-    --verbose         Show detailed output
-    -h, --help        Show this help
+    --role=ROLE          Force role: 'server' or 'client'
+    --skip-checks        Skip requirement checks
+    --skip-tests         Skip connectivity tests
+    --verbose            Show detailed output
+    --install-tools      Install Homebrew tools and GUI apps
+    --apply-dotfiles     Apply dotfiles configuration
+    --full-setup         Run full setup (tools + dotfiles + network)
+    -h, --help           Show this help
 
 ${BOLD}Examples:${NC}
-    $0                  # Interactive mode
-    $0 --role=server    # Setup as server
-    $0 --role=client    # Setup as client
+    $0                   # Interactive mode
+    $0 --role=server      # Setup as server
+    $0 --role=client      # Setup as client
+    $0 --install-tools    # Install all tools
+    $0 --apply-dotfiles   # Apply dotfiles
+    $0 --full-setup       # Full setup (everything)
 
 EOF
 }
@@ -54,6 +60,9 @@ FORCE_ROLE=""
 SKIP_CHECKS=false
 SKIP_TESTS=false
 VERBOSE=false
+INSTALL_TOOLS=false
+APPLY_DOTFILES=false
+FULL_SETUP=false
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
@@ -68,6 +77,17 @@ while [[ $# -gt 0 ]]; do
 		;;
 	--verbose)
 		VERBOSE=true
+		;;
+	--install-tools)
+		INSTALL_TOOLS=true
+		;;
+	--apply-dotfiles)
+		APPLY_DOTFILES=true
+		;;
+	--full-setup)
+		FULL_SETUP=true
+		INSTALL_TOOLS=true
+		APPLY_DOTFILES=true
 		;;
 	-h | --help)
 		show_help
@@ -310,6 +330,28 @@ setup_client() {
 }
 
 # =============================================================================
+# Install Tools
+# =============================================================================
+
+install_tools() {
+	log_header "Installing Homebrew Tools"
+
+	echo ""
+	"${REPO_DIR}/scripts/common/install-tools.sh"
+}
+
+# =============================================================================
+# Apply Dotfiles
+# =============================================================================
+
+apply_dotfiles() {
+	log_header "Applying Dotfiles"
+
+	echo ""
+	"${REPO_DIR}/scripts/common/apply-dotfiles.sh"
+}
+
+# =============================================================================
 # Main
 # =============================================================================
 
@@ -321,6 +363,32 @@ main() {
 	echo "║       Remote macOS Agents - Setup                 ║"
 	echo "╚═══════════════════════════════════════════════════╝"
 	echo -e "${NC}"
+
+	# Handle standalone tool/dotfiles options
+	if [[ "$INSTALL_TOOLS" == "true" ]]; then
+		install_tools
+		return
+	fi
+
+	if [[ "$APPLY_DOTFILES" == "true" ]]; then
+		apply_dotfiles
+		return
+	fi
+
+	if [[ "$FULL_SETUP" == "true" ]]; then
+		log_info "Running full setup (tools + dotfiles + network)"
+		echo ""
+		install_tools
+		echo ""
+		apply_dotfiles
+		echo ""
+		log_info "Tools and dotfiles configured!"
+		echo ""
+		log_info "Now run network setup with:"
+		echo "  $0 --role=server   # If setting up Mac Mini"
+		echo "  $0 --role=client   # If setting up Laptop"
+		return
+	fi
 
 	# Check for existing config
 	if [[ -f "$CONFIG_FILE" ]]; then

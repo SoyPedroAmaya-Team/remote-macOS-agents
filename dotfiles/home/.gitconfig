@@ -1,0 +1,43 @@
+[user]
+    name = Pedro Amaya
+{{- if .gitEmail }}
+    email = {{ .gitEmail }}
+{{- else }}
+    email = soypedroamaya@gmail.com
+{{- end }}
+
+[init]
+    defaultBranch = main
+
+[pull]
+    rebase = true
+
+[alias]
+    lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+    co = checkout
+    br = branch
+    st = status -sb
+
+[core]
+    editor = nvim
+    excludesfile = ~/.config/git/ignore
+
+[color]
+    ui = auto
+
+[diff]
+    color = auto
+    mnemonicPrefix = true
+
+[rerere]
+    enabled = true
+
+[push]
+    default = current
+    autoSetupRemote = true
+
+# GPG signing (uncomment and configure if using)
+# [commit]
+#     gpgsign = true
+# [gpg]
+#     program = /usr/local/bin/gpg

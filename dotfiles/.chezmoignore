@@ -1,0 +1,12 @@
+# chezmoi ignore patterns
+README.md
+LICENSE
+.gitignore
+Brewfile*
+*.md
+docs/
+scripts/
+configs/
+lib/
+openspec/
+.pi/

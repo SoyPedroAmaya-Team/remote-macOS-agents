@@ -1,0 +1,19 @@
+# chezmoi configuration
+# https://chezmoi.io/reference/configuration/
+
+[diff]
+pager = ""
+
+[merge]
+command = "nvim"
+args = ["-d", "$output", "$left", "$base", "$right"]
+
+[editor]
+command = "nvim"
+args = ["$filepath"]
+[editor.options]
+wait = true
+
+[data]
+# Machine-specific values (can be overridden per-machine)
+# hostname = "laptop" or "macmini"
