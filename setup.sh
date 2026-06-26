@@ -36,6 +36,7 @@ ${BOLD}Options:${NC}
     --skip-checks        Skip requirement checks
     --skip-tests         Skip connectivity tests
     --verbose            Show detailed output
+    --yes, -y            Auto-confirm all prompts (non-interactive)
     --install-tools      Install Homebrew tools and GUI apps
     --apply-dotfiles     Apply dotfiles configuration
     --full-setup         Run full setup (tools + dotfiles + network)
@@ -48,6 +49,7 @@ ${BOLD}Examples:${NC}
     $0 --install-tools    # Install all tools
     $0 --apply-dotfiles   # Apply dotfiles
     $0 --full-setup       # Full setup (everything)
+    $0 --yes --full-setup # Non-interactive full setup
 
 EOF
 }
@@ -60,6 +62,7 @@ FORCE_ROLE=""
 SKIP_CHECKS=false
 SKIP_TESTS=false
 VERBOSE=false
+AUTO_YES=false
 INSTALL_TOOLS=false
 APPLY_DOTFILES=false
 FULL_SETUP=false
@@ -77,6 +80,9 @@ while [[ $# -gt 0 ]]; do
 		;;
 	--verbose)
 		VERBOSE=true
+		;;
+	--yes | -y)
+		AUTO_YES=true
 		;;
 	--install-tools)
 		INSTALL_TOOLS=true
@@ -337,7 +343,54 @@ install_tools() {
 	log_header "Installing Homebrew Tools"
 
 	echo ""
-	"${REPO_DIR}/scripts/common/install-tools.sh"
+	# Pass --yes flag if AUTO_YES is set
+	if [[ "$AUTO_YES" == "true" ]]; then
+		if ! "${REPO_DIR}/scripts/common/install-tools.sh" --yes; then
+			log_error "Tools installation failed"
+			return 1
+		fi
+	else
+		if ! "${REPO_DIR}/scripts/common/install-tools.sh"; then
+			log_error "Tools installation failed"
+			return 1
+		fi
+	fi
+
+	# Verify critical tools were installed
+	echo ""
+	log_info "Verifying critical tools..."
+	# Note: neovim binary is "nvim", exa is now "eza"
+	local all_ok=true
+
+	# Check each tool
+	for tool in chezmoi starship mise pnpm; do
+		if command -v "$tool" &>/dev/null; then
+			echo -e "  ${GREEN}✓${NC} $tool"
+		else
+			echo -e "  ${RED}✗${NC} $tool (NOT FOUND)"
+			all_ok=false
+		fi
+	done
+
+	# neovim is installed as "nvim"
+	if command -v nvim &>/dev/null; then
+		echo -e "  ${GREEN}✓${NC} neovim (nvim)"
+	else
+		echo -e "  ${RED}✗${NC} neovim (nvim NOT FOUND)"
+		all_ok=false
+	fi
+
+	# eza is the modern replacement for exa
+	if command -v eza &>/dev/null; then
+		echo -e "  ${GREEN}✓${NC} eza (exa replacement)"
+	else
+		echo -e "  ${RED}✗${NC} eza (exa replacement NOT FOUND)"
+		all_ok=false
+	fi
+
+	if ! $all_ok; then
+		log_warning "Some tools were not installed. Try: brew install chezmoi starship neovim mise pnpm eza"
+	fi
 }
 
 # =============================================================================
@@ -348,7 +401,12 @@ apply_dotfiles() {
 	log_header "Applying Dotfiles"
 
 	echo ""
-	"${REPO_DIR}/scripts/common/apply-dotfiles.sh"
+	# Pass --yes flag if AUTO_YES is set
+	if [[ "$AUTO_YES" == "true" ]]; then
+		"${REPO_DIR}/scripts/common/apply-dotfiles.sh" --yes
+	else
+		"${REPO_DIR}/scripts/common/apply-dotfiles.sh"
+	fi
 }
 
 # =============================================================================
@@ -364,17 +422,7 @@ main() {
 	echo "╚═══════════════════════════════════════════════════╝"
 	echo -e "${NC}"
 
-	# Handle standalone tool/dotfiles options
-	if [[ "$INSTALL_TOOLS" == "true" ]]; then
-		install_tools
-		return
-	fi
-
-	if [[ "$APPLY_DOTFILES" == "true" ]]; then
-		apply_dotfiles
-		return
-	fi
-
+	# Handle FULL_SETUP first (it sets both INSTALL_TOOLS and APPLY_DOTFILES)
 	if [[ "$FULL_SETUP" == "true" ]]; then
 		log_info "Running full setup (tools + dotfiles + network)"
 		echo ""
@@ -387,6 +435,17 @@ main() {
 		log_info "Now run network setup with:"
 		echo "  $0 --role=server   # If setting up Mac Mini"
 		echo "  $0 --role=client   # If setting up Laptop"
+		return
+	fi
+
+	# Handle individual options
+	if [[ "$INSTALL_TOOLS" == "true" ]]; then
+		install_tools
+		return
+	fi
+
+	if [[ "$APPLY_DOTFILES" == "true" ]]; then
+		apply_dotfiles
 		return
 	fi
 

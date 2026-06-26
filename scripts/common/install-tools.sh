@@ -4,9 +4,31 @@
 # =============================================================================
 # Installs CLI tools and GUI applications via Homebrew
 # Idempotent: safe to run multiple times
+#
+# Usage:
+#   ./install-tools.sh              # Interactive mode
+#   ./install-tools.sh --yes        # Auto-confirm all prompts
+#   FORCE_YES=1 ./install-tools.sh  # Or via environment variable
 # =============================================================================
 
-set -e
+# Parse arguments
+FORCE_YES="${FORCE_YES:-0}"
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --yes|-y)
+            FORCE_YES=1
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: $0 [--yes]"
+            echo "  --yes, -y  Auto-confirm all prompts"
+            exit 0
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -19,18 +41,18 @@ source "${REPO_DIR}/lib/utils.sh"
 # =============================================================================
 
 check_requirements() {
-	log_header "Checking Requirements for Tools Installation"
+    log_header "Checking Requirements for Tools Installation"
 
-	if ! command -v brew &>/dev/null; then
-		log_error "Homebrew is not installed"
-		echo ""
-		echo "Please install Homebrew first:"
-		echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
-		return 1
-	fi
+    if ! command -v brew &>/dev/null; then
+        log_error "Homebrew is not installed"
+        echo ""
+        echo "Please install Homebrew first:"
+        echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+        return 1
+    fi
 
-	log_success "Homebrew found"
-	return 0
+    log_success "Homebrew found"
+    return 0
 }
 
 # =============================================================================
@@ -38,18 +60,18 @@ check_requirements() {
 # =============================================================================
 
 setup_taps() {
-	log_info "Setting up Homebrew taps..."
+    log_info "Setting up Homebrew taps..."
 
-	# Core taps
-	brew tap homebrew/core 2>/dev/null || true
-	brew tap homebrew/cask 2>/dev/null || true
-	brew tap homebrew/services 2>/dev/null || true
+    # Core taps
+    brew tap homebrew/core 2>/dev/null || true
+    brew tap homebrew/cask 2>/dev/null || true
+    brew tap homebrew/services 2>/dev/null || true
 
-	# Third-party taps (for specific packages)
-	brew tap 1password/tap 2>/dev/null || true
-	brew tap supabase/tap 2>/dev/null || true
+    # Third-party taps (for specific packages)
+    brew tap 1password/tap 2>/dev/null || true
+    brew tap supabase/tap 2>/dev/null || true
 
-	log_success "Taps configured"
+    log_success "Taps configured"
 }
 
 # =============================================================================
@@ -57,108 +79,101 @@ setup_taps() {
 # =============================================================================
 
 install_cli_tools() {
-	log_header "Installing CLI Tools"
+    log_header "Installing CLI Tools"
 
-	local tools=(
-		# Core VCS
-		git
-		gh
+    # CORE tools - minimal set for remote-macOS-agents project
+    # Core VCS
+    local core_tools=(
+        gh              # GitHub CLI
+        ripgrep         # Fast grep (rg)
+    )
 
-		# Shell & Prompt
-		starship
-		zsh
-		zsh-completions
-		chezmoi
+    # Shell & Prompt
+    local shell_tools=(
+        starship        # Shell prompt
+        chezmoi         # Dotfiles manager
+    )
 
-		# Editor
-		neovim
+    # Editor
+    local editor_tools=(
+        neovim          # Text editor
+    )
 
-		# Runtime managers
-		mise
-		fvm
-		uv
+    # Runtime managers
+    local runtime_tools=(
+        mise            # Runtime version manager
+        pnpm            # Node package manager
+    )
 
-		# JS/Node
-		node
-		pnpm
+    # Utils - universally useful
+    local utils_tools=(
+        jq              # JSON processor
+        bat             # cat with colors
+        eza             # Modern ls replacement (exa successor)
+        fd              # Fast find alternative
+        lazygit         # Terminal UI for git
+        shellcheck      # Shell script linter
+    )
 
-		# DB
-		supabase
-		postgresql@17
+    # Dev tools - optional but commonly needed
+    local dev_tools=(
+        go              # Go language
+    )
 
-		# Mobile
-		cocoapods
+    # Media tools
+    local media_tools=(
+        ffmpeg          # Video/audio conversion
+    )
 
-		# Utils
-		lazygit
-		gg
-		httpie
-		jq
-		yq
-		tldr
-		bat
-		exa
-		fd
-		fzf
-		ripgrep
-		delta
-		ghq
+    # Misc utilities
+    local misc_tools=(
+        tree            # Directory tree view
+        watch           # Repeat command
+        parallel        # Parallel execution
+        hadolint        # Dockerfile linter
+    )
 
-		# Dev tools
-		cmake
-		go
-		rustup
-		pyenv
+    # Combine all tools
+    local all_tools=(
+        "${core_tools[@]}"
+        "${shell_tools[@]}"
+        "${editor_tools[@]}"
+        "${runtime_tools[@]}"
+        "${utils_tools[@]}"
+        "${dev_tools[@]}"
+        "${media_tools[@]}"
+        "${misc_tools[@]}"
+    )
 
-		# Cloud
-		awscli
-		gcloud
-		terraform
-		kubectl
-		helm
+    # Filter to install (only tools not already in PATH)
+    local to_install=()
 
-		# Network
-		wget
-		curl
-		nmap
-		mosh
+    echo ""
+    echo "Checking tools..."
 
-		# Image/Media
-		imagemagick
-		ffmpeg
-		gifsicle
+    for tool in "${all_tools[@]}"; do
+        if command -v "$tool" &>/dev/null; then
+            echo -e "  ${YELLOW}${tool}${NC} already installed, skipping"
+        else
+            to_install+=("$tool")
+        fi
+    done
 
-		# Misc
-		tree
-		htop
-		watch
-		parallel
-		shellcheck
-		shfmt
-		hadolint
-		tflint
-	)
+    if [[ ${#to_install[@]} -eq 0 ]]; then
+        log_success "All tools already installed"
+        return 0
+    fi
 
-	# Filter out already installed packages
-	local to_install=()
-	for tool in "${tools[@]}"; do
-		if ! brew list "$tool" &>/dev/null; then
-			to_install+=("$tool")
-		else
-			echo -e "  ${YELLOW}${tool}${NC} already installed, skipping"
-		fi
-	done
+    echo ""
+    log_info "Installing ${#to_install[@]} tools..."
 
-	if [[ ${#to_install[@]} -eq 0 ]]; then
-		log_success "All CLI tools already installed"
-		return 0
-	fi
-
-	echo ""
-	log_info "Installing ${#to_install[@]} CLI tools..."
-	brew install "${to_install[@]}"
-
-	log_success "CLI tools installed"
+    # Use brew install -y to auto-confirm
+    if brew install -y "${to_install[@]}" 2>&1; then
+        log_success "Tools installed successfully"
+    else
+        log_warning "Some tools may have failed to install"
+        return 1
+    fi
 }
 
 # =============================================================================
@@ -166,118 +181,71 @@ install_cli_tools() {
 # =============================================================================
 
 install_gui_apps() {
-	log_header "Installing GUI Applications"
+    log_header "Installing GUI Applications"
 
-	# These are casks - GUI applications
-	local apps=(
-		# Terminal & Fonts
-		"font-fira-code-nerd-font"
+    # Essential GUI apps only
+    local apps=(
+        "1password"
+        "1password-cli"
+        "tailscale"
+    )
 
-		# Password & VPN
-		"1password"
-		"1password-cli"
-		"tailscale"
+    # Development tools (optional)
+    local dev_apps=(
+        "cursor"
+        "docker"
+        "docker-desktop"
+    )
 
-		# Productivity
-		"notion"
-		"raycast"
-		"setapp"
+    # Productivity
+    local productivity_apps=(
+        "notion"
+        "raycast"
+    )
 
-		# Development
-		"cursor"
-		"claude"
-		"bruno"
-		"gitkraken"
-		"datagrip"
-		"docker"
-		"docker-desktop"
-		"antigravity"
-		"antigravity-ide"
+    # Combine all apps
+    local all_apps=(
+        "${apps[@]}"
+        "${dev_apps[@]}"
+        "${productivity_apps[@]}"
+    )
 
-		# BI & Data
-		"tableau"
-		"superset"
+    # Filter out already installed packages
+    local to_install=()
+    for app in "${all_apps[@]}"; do
+        if ! brew list --cask "$app" &>/dev/null; then
+            to_install+=("$app")
+        else
+            echo -e "  ${YELLOW}${app}${NC} already installed, skipping"
+        fi
+    done
 
-		# Office
-		"microsoft-excel"
+    if [[ ${#to_install[@]} -eq 0 ]]; then
+        log_success "All GUI apps already installed"
+        return 0
+    fi
 
-		# Browser
-		"google-chrome"
+    echo ""
+    log_info "Installing ${#to_install[@]} GUI applications..."
 
-		# Terminal (cmux manages the actual terminal)
-		"cmux"
-	)
+    # Install casks one by one with -y flag
+    local failed=()
+    for app in "${to_install[@]}"; do
+        echo -n "  Installing ${app}... "
+        if brew install --cask -y "$app" 2>/dev/null; then
+            echo -e "${GREEN}OK${NC}"
+        else
+            echo -e "${RED}FAILED${NC}"
+            failed+=("$app")
+        fi
+    done
 
-	# Filter out already installed packages
-	local to_install=()
-	for app in "${apps[@]}"; do
-		if ! brew list --cask "$app" &>/dev/null; then
-			to_install+=("$app")
-		else
-			echo -e "  ${YELLOW}${app}${NC} already installed, skipping"
-		fi
-	done
+    if [[ ${#failed[@]} -gt 0 ]]; then
+        echo ""
+        log_warning "Some apps failed to install: ${failed[*]}"
+    fi
 
-	if [[ ${#to_install[@]} -eq 0 ]]; then
-		log_success "All GUI apps already installed"
-		return 0
-	fi
-
-	echo ""
-	log_info "Installing ${#to_install[@]} GUI applications..."
-	echo "  (This may take a while for large apps like Docker...)"
-	echo ""
-
-	# Install casks one by one to handle failures gracefully
-	local failed=()
-	for app in "${to_install[@]}"; do
-		echo -n "  Installing ${app}... "
-		if brew install --cask --quiet "$app" 2>/dev/null; then
-			echo -e "${GREEN}OK${NC}"
-		else
-			echo -e "${RED}FAILED${NC}"
-			failed+=("$app")
-		fi
-	done
-
-	if [[ ${#failed[@]} -gt 0 ]]; then
-		echo ""
-		log_warning "Some apps failed to install:"
-		for app in "${failed[@]}"; do
-			echo "  - $app"
-		done
-		echo ""
-		echo "You can try installing them manually with:"
-		echo "  brew install --cask ${failed[*]}"
-	fi
-
-	log_success "GUI applications processed"
-}
-
-# =============================================================================
-# Install via Brewfile (alternative method)
-# =============================================================================
-
-install_from_brewfile() {
-	log_header "Installing from Brewfile"
-
-	local brewfile="$REPO_DIR/Brewfile"
-
-	if [[ ! -f "$brewfile" ]]; then
-		log_error "Brewfile not found at $brewfile"
-		return 1
-	fi
-
-	if [[ ! -f "$brewfile.lock.json" ]]; then
-		log_info "Creating Brewfile.lock.json (first run)..."
-		brew bundle --file="$brewfile" --describe
-	else
-		log_info "Installing from Brewfile.lock.json..."
-	fi
-
-	brew bundle --file="$brewfile"
-
-	log_success "Brewfile installed"
+    log_success "GUI applications processed"
 }
 
 # =============================================================================
@@ -285,12 +253,12 @@ install_from_brewfile() {
 # =============================================================================
 
 update_environment() {
-	log_header "Updating Shell Environment"
+    log_header "Updating Shell Environment"
 
-	# Rehash to update command hash
-	rehash 2>/dev/null || true
+    # Rehash to update command hash
+    rehash 2>/dev/null || true
 
-	log_success "Environment updated"
+    log_success "Environment updated"
 }
 
 # =============================================================================
@@ -298,36 +266,50 @@ update_environment() {
 # =============================================================================
 
 verify_installation() {
-	log_header "Verifying Installation"
+    log_header "Verifying Installation"
 
-	local tools=(
-		"git"
-		"gh"
-		"starship"
-		"nvim"
-		"mise"
-		"pnpm"
-		"neovim"
-	)
+    local tools=(
+        "starship"
+        "chezmoi"
+        "nvim"
+        "mise"
+        "pnpm"
+        "gh"
+        "rg"
+        "eza"
+        "jq"
+        "bat"
+        "fd"
+        "lazygit"
+        "ffmpeg"
+        "tree"
+    )
 
-	local all_ok=true
-	for tool in "${tools[@]}"; do
-		if command -v "$tool" &>/dev/null; then
-			local version=$("$tool" --version 2>/dev/null | head -1 || echo "installed")
-			echo -e "  ${GREEN}✓${NC} ${tool}: ${version}"
-		else
-			echo -e "  ${RED}✗${NC} ${tool}: NOT FOUND"
-			all_ok=false
-		fi
-	done
+    local all_ok=true
+    for tool in "${tools[@]}"; do
+        # Handle aliases
+        case "$tool" in
+            nvim) actual="nvim" ;;
+            rg) actual="rg" ;;
+            *) actual="$tool" ;;
+        esac
 
-	if $all_ok; then
-		log_success "All core tools verified"
-		return 0
-	else
-		log_warning "Some tools were not found. You may need to restart your shell."
-		return 1
-	fi
+        if command -v "$actual" &>/dev/null; then
+            local version=$("$actual" --version 2>/dev/null | head -1 || "$actual" --help 2>/dev/null | head -1 || echo "installed")
+            echo -e "  ${GREEN}✓${NC} ${tool}: ${version}"
+        else
+            echo -e "  ${RED}✗${NC} ${tool}: NOT FOUND"
+            all_ok=false
+        fi
+    done
+
+    if $all_ok; then
+        log_success "All core tools verified"
+        return 0
+    else
+        log_warning "Some tools were not found"
+        return 1
+    fi
 }
 
 # =============================================================================
@@ -335,55 +317,60 @@ verify_installation() {
 # =============================================================================
 
 main() {
-	echo ""
-	log_header "Homebrew Tools Installation"
-	echo ""
+    echo ""
+    log_header "Homebrew Tools Installation"
+    echo ""
 
-	# Check requirements
-	if ! check_requirements; then
-		return 1
-	fi
+    # Check requirements
+    if ! check_requirements; then
+        return 1
+    fi
 
-	# Setup taps
-	setup_taps
+    # Setup taps
+    setup_taps
 
-	# Ask for confirmation
-	echo ""
-	echo "This will install the following:"
-	echo "  - Core CLI tools (git, starship, neovim, mise, etc.)"
-	echo "  - GUI applications (1password, notion, raycast, cursor, etc.)"
-	echo ""
-	echo "Already installed packages will be skipped."
-	echo ""
+    # Ask for confirmation unless FORCE_YES is set
+    if [[ "$FORCE_YES" == "1" ]]; then
+        echo ""
+        echo -e "${BOLD}Auto-confirm mode enabled${NC} (--yes flag)"
+        echo "Installing core tools..."
+    else
+        echo ""
+        echo "This will install the following:"
+        echo "  - Core CLI tools (starship, chezmoi, neovim, mise, pnpm, eza, gh, etc.)"
+        echo "  - GUI applications (1password, tailscale, cursor, docker, etc.)"
+        echo ""
+        echo "Already installed packages will be skipped."
+        echo ""
 
-	if ! confirm "Continue with installation?"; then
-		log_warning "Installation cancelled"
-		return 1
-	fi
+        if ! confirm "Continue with installation?"; then
+            log_warning "Installation cancelled"
+            return 1
+        fi
+    fi
 
-	# Install tools
-	echo ""
-	install_cli_tools
+    # Install tools
+    echo ""
+    install_cli_tools
 
-	echo ""
-	install_gui_apps
+    echo ""
+    install_gui_apps
 
-	echo ""
-	update_environment
+    echo ""
+    update_environment
 
-	echo ""
-	verify_installation
+    echo ""
+    verify_installation
 
-	echo ""
-	log_success "Tools installation complete!"
-	echo ""
-	echo -e "${BOLD}Next steps:${NC}"
-	echo "  1. Restart your terminal or run: ${BOLD}source ~/.zshrc${NC}"
-	echo "  2. Run: ${BOLD}./setup.sh --skip-checks${NC}"
-	echo "  3. Select 'Apply dotfiles' to configure your environment"
+    echo ""
+    log_success "Tools installation complete!"
+    echo ""
+    echo -e "${BOLD}Next steps:${NC}"
+    echo "  1. Restart your terminal or run: ${BOLD}source ~/.zshrc${NC}"
+    echo "  2. Run: ${BOLD}./setup.sh --apply-dotfiles${NC}"
 }
 
 # Run if executed directly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-	main "$@"
+    main "$@"
 fi

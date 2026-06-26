@@ -4,15 +4,42 @@
 # =============================================================================
 # Configures the user's environment using chezmoi
 # Idempotent: safe to run multiple times
+#
+# Usage:
+#   ./apply-dotfiles.sh             # Interactive mode
+#   ./apply-dotfiles.sh --yes       # Auto-confirm all prompts
 # =============================================================================
 
-set -e
+# Parse arguments
+AUTO_YES="${AUTO_YES:-0}"
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --yes|-y)
+            AUTO_YES=1
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: $0 [--yes]"
+            exit 0
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+# Don't use set -e, we'll handle errors explicitly
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 source "${REPO_DIR}/lib/colors.sh"
 source "${REPO_DIR}/lib/utils.sh"
+
+# Auto-confirm wrapper for confirm function
+if [[ "$AUTO_YES" == "1" ]]; then
+    confirm() { return 0; }  # Always return true
+fi
 
 # =============================================================================
 # Check Requirements
