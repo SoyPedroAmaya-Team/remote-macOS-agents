@@ -17,6 +17,7 @@ brew "gh"
 brew "starship"
 brew "zsh"
 brew "zsh-completions"
+brew "chezmoi"
 
 # Editor
 brew "neovim"
@@ -37,7 +38,6 @@ brew "pyenv"
 
 # Database
 brew "postgresql@17"
-brew "psql"
 brew "supabase"
 
 # Mobile Development

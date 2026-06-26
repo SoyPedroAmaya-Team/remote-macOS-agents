@@ -68,6 +68,7 @@ install_cli_tools() {
 		starship
 		zsh
 		zsh-completions
+		chezmoi
 
 		# Editor
 		neovim
@@ -84,7 +85,6 @@ install_cli_tools() {
 		# DB
 		supabase
 		postgresql@17
-		psql
 
 		# Mobile
 		cocoapods
