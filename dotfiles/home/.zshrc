@@ -6,8 +6,13 @@
 # Initialize starship prompt
 eval "$(starship init zsh)"
 
-# Extend PATH
+# =============================================================================
+# PATH Configuration
+# =============================================================================
+
+# Extend PATH (avoid duplicates)
 export PATH="$PATH:$HOME/.local/bin"
+export PATH="$PATH:$HOME/bin"
 
 # pnpm
 export PNPM_HOME="$HOME/Library/pnpm"
@@ -16,17 +21,20 @@ case ":$PATH:" in
   *) export PATH="$PNPM_HOME/bin:$PATH" ;;
 esac
 
-# User bin
-export PATH="$HOME/bin:$PATH"
-export PATH="$HOME/.local/bin:$PATH"
-
-# Postgres (managed separately via Homebrew)
+# Postgres (managed via Homebrew)
 export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
 
-## [Completion]
-## Completion scripts setup. Remove the following line to uninstall
+# Antigravity IDE (if installed)
+if [[ -d "$HOME/.antigravity-ide/antigravity-ide/bin" ]]; then
+    export PATH="$HOME/.antigravity-ide/antigravity-ide/bin:$PATH"
+fi
+
+# =============================================================================
+# Completions
+# =============================================================================
+
+# Dart CLI completion
 [[ -f $HOME/.dart-cli-completion/zsh-config.zsh ]] && . $HOME/.dart-cli-completion/zsh-config.zsh || true
-## [/Completion]
 
 # =============================================================================
 # Aliases
@@ -40,16 +48,7 @@ alias andrew='ssh andrew@100.64.26.17'
 alias meta="$HOME/.local/meta-ads-env/bin/meta"
 
 # =============================================================================
-# Machine-specific configuration (chezmoi template)
-# =============================================================================
-
-# Hostname-aware aliases (uncomment and customize if needed)
-# if [[ "{{ .chezmoi.hostname }}" == "macmini" ]]; then
-#     alias serv='ssh pedro@macmini.local'
-# fi
-
-# =============================================================================
-# Environment variables
+# Shell Options
 # =============================================================================
 
 # History
@@ -60,3 +59,4 @@ SAVEHIST=10000
 # Options
 setopt SHARE_HISTORY
 setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_SPACE
