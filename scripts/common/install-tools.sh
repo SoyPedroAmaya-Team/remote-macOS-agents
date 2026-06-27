@@ -170,6 +170,27 @@ setup_taps() {
 }
 
 # =============================================================================
+# Cleanup conflicting installations
+# =============================================================================
+
+cleanup_conflicts() {
+	log_header "Cleaning up conflicting installations..."
+
+	# Remove corepack pnpm if exists (we use Homebrew pnpm)
+	if [[ -d "$HOME/Library/pnpm" ]]; then
+		log_info "Removing corepack pnpm ($HOME/Library/pnpm)..."
+		rm -rf "$HOME/Library/pnpm" 2>/dev/null || true
+	fi
+
+	# Disable corepack pnpm
+	if command -v corepack &>/dev/null; then
+		corepack disable pnpm 2>/dev/null || true
+	fi
+
+	log_success "Cleanup complete"
+}
+
+# =============================================================================
 # Install CLI Tools
 # =============================================================================
 
@@ -323,6 +344,9 @@ main() {
 
 	# Setup taps
 	setup_taps
+
+	# Cleanup conflicting installations
+	cleanup_conflicts
 
 	# Auto-confirm for automated runs
 	if [[ "${AUTO_YES:-false}" == "true" ]] || [[ "${CI:-false}" == "true" ]]; then
