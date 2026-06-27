@@ -8,6 +8,7 @@
 # Usage:
 #   ./apply-dotfiles.sh             # Interactive mode
 #   ./apply-dotfiles.sh --yes       # Auto-confirm all prompts
+#   AUTO_YES=1 ./apply-dotfiles.sh  # Via environment variable
 # =============================================================================
 
 # Parse arguments
@@ -29,6 +30,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Don't use set -e, we'll handle errors explicitly
+set +e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -36,7 +38,10 @@ REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "${REPO_DIR}/lib/colors.sh"
 source "${REPO_DIR}/lib/utils.sh"
 
+# =============================================================================
 # Auto-confirm wrapper for confirm function
+# =============================================================================
+
 if [[ "$AUTO_YES" == "1" ]]; then
     confirm() { return 0; }  # Always return true
 fi
@@ -94,25 +99,24 @@ configure_machine() {
 	log_header "Configuring Machine-Specific Values"
 
 	local hostname=$(hostname -s 2>/dev/null || scutil --get LocalHostName 2>/dev/null || echo "unknown")
-	local git_email="{{ .gitEmail }}"
+	local git_email="soypedroamaya@gmail.com"
 	local git_name="Pedro Amaya"
 
-	echo ""
-	echo -e "  ${BOLD}Detected hostname:${NC} ${hostname}"
-	echo -e "  ${BOLD}Git user name:${NC} ${git_name}"
-	echo -e "  ${BOLD}Git user email:${NC} ${git_email}"
-	echo ""
-
-	# Allow customization
-	read -p "Git email [$git_email]: " input_email
-	if [[ -n "$input_email" ]]; then
-		git_email="$input_email"
+	# In auto mode, don't ask questions
+	if [[ "$AUTO_YES" != "1" ]]; then
+		echo ""
+		echo -e "  ${BOLD}Detected hostname:${NC} ${hostname}"
+		echo -e "  ${BOLD}Git user name:${NC} ${git_name}"
+		echo -e "  ${BOLD}Git user email:${NC} ${git_email}"
+		echo ""
+		read -p "Git email [$git_email]: " input_email
+		if [[ -n "$input_email" ]]; then
+			git_email="$input_email"
+		fi
+	else
+		echo "  hostname: $hostname"
+		echo "  git_email: $git_email (auto mode)"
 	fi
-
-	echo ""
-	log_info "Machine configuration saved"
-	echo "  hostname: $hostname"
-	echo "  git_email: $git_email"
 
 	# Create/update machine config for chezmoi
 	mkdir -p ~/.config/chezmoi
@@ -139,14 +143,24 @@ init_chezmoi() {
 
 	# Check if already initialized
 	if [[ -d "$chezmoi_source_dir" ]]; then
-		echo ""
-		if confirm "chezmoi is already initialized. Update from repo?"; then
-			log_info "Updating chezmoi source from $dotfiles_dir"
+		# Always update in auto mode, otherwise ask
+		if [[ "$AUTO_YES" == "1" ]]; then
+			log_info "Updating chezmoi source from $dotfiles_dir (auto mode)"
 			rm -rf "$chezmoi_source_dir"
-		else
-			log_info "Keeping existing chezmoi source"
-			return 0
+		elif [[ -L "$chezmoi_source_dir" ]]; then
+			local current_link=$(readlink "$chezmoi_source_dir")
+			if [[ "$current_link" != "$dotfiles_dir" ]]; then
+				echo ""
+				if confirm "chezmoi source points to different location. Update to $dotfiles_dir?"; then
+					rm -rf "$chezmoi_source_dir"
+				else
+					log_info "Keeping existing chezmoi source"
+					return 0
+				fi
+			fi
 		fi
+	else
+		log_info "Initializing chezmoi"
 	fi
 
 	# Link the dotfiles repo as chezmoi source
@@ -179,18 +193,26 @@ apply_dotfiles() {
 
 	echo ""
 
-	# Show what will change
-	log_info "Changes to be applied:"
-	chezmoi diff || true
-	echo ""
-
-	if confirm "Proceed with these changes?"; then
-		chezmoi apply
-		log_success "Dotfiles applied successfully!"
+	# In auto mode, apply directly without showing diff
+	if [[ "$AUTO_YES" == "1" ]]; then
+		log_info "Applying dotfiles (auto mode)..."
+		chezmoi apply --force 2>/dev/null || chezmoi apply
 	else
-		log_warning "Changes not applied"
-		return 1
+		# Show what will change
+		log_info "Changes to be applied:"
+		chezmoi diff || true
+		echo ""
+
+		if confirm "Proceed with these changes?"; then
+			chezmoi apply
+			log_success "Dotfiles applied successfully!"
+		else
+			log_warning "Changes not applied"
+			return 1
+		fi
 	fi
+
+	log_success "Dotfiles applied successfully!"
 }
 
 # =============================================================================
@@ -252,33 +274,6 @@ verify_configuration() {
 }
 
 # =============================================================================
-# Help for manual commands
-# =============================================================================
-
-show_help() {
-	cat <<EOF
-${BOLD}Dotfiles Management Commands${NC}
-
-After setup, you can use these commands:
-
-  chezmoi diff         Show changes without applying
-  chezmoi apply        Apply changes
-  chezmoi edit ~/.zshrc  Edit a file and apply on save
-  chezmoi update       Update from repo
-  chezmoi cd           Go to source directory
-
-${BOLD}Workflow:${NC}
-  1. Edit files directly: chezmoi edit ~/.zshrc
-  2. Preview changes: chezmoi diff
-  3. Apply changes: chezmoi apply
-  4. Commit to repo: cd ~/.local/share/chezmoi && git commit -m "..."
-  5. Push: git push
-  6. On other machine: chezmoi update
-
-EOF
-}
-
-# =============================================================================
 # Main
 # =============================================================================
 
@@ -286,6 +281,10 @@ main() {
 	echo ""
 	log_header "Dotfiles Configuration"
 	echo ""
+
+	if [[ "$AUTO_YES" == "1" ]]; then
+		log_info "Auto mode enabled - no prompts"
+	fi
 
 	# Check requirements
 	if ! check_requirements; then
@@ -310,9 +309,6 @@ main() {
 
 	echo ""
 	log_success "Dotfiles configuration complete!"
-	echo ""
-
-	show_help
 }
 
 # Run if executed directly

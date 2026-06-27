@@ -1,10 +1,6 @@
 [user]
     name = Pedro Amaya
-{{- if .gitEmail }}
-    email = {{ .gitEmail }}
-{{- else }}
-    email = soypedroamaya@gmail.com
-{{- end }}
+    email = {{ .gitEmail | default "soypedroamaya@gmail.com" }}
 
 [init]
     defaultBranch = main

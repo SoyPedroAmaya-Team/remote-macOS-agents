@@ -13,9 +13,10 @@ eval "$(starship init zsh)"
 # Extend PATH (avoid duplicates)
 export PATH="$PATH:$HOME/.local/bin"
 export PATH="$PATH:$HOME/bin"
+export PATH="/opt/homebrew/bin:$PATH"
 
-# pnpm
-export PNPM_HOME="$HOME/Library/pnpm"
+# pnpm (Homebrew)
+export PNPM_HOME="/Users/pedro/Library/pnpm"
 case ":$PATH:" in
   *":$PNPM_HOME/bin:"*) ;;
   *) export PATH="$PNPM_HOME/bin:$PATH" ;;
