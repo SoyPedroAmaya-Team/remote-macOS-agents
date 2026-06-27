@@ -10,43 +10,19 @@ eval "$(starship init zsh)"
 # PATH Configuration
 # =============================================================================
 
-# Extend PATH (avoid duplicates)
-export PATH="$PATH:$HOME/.local/bin"
-export PATH="$PATH:$HOME/bin"
-export PATH="/opt/homebrew/bin:$PATH"
-
-# pnpm (Homebrew)
-export PNPM_HOME="/Users/pedro/Library/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME/bin:"*) ;;
-  *) export PATH="$PNPM_HOME/bin:$PATH" ;;
-esac
-
-# Postgres (managed via Homebrew)
+# Homebrew paths FIRST (have priority)
+export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
 export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
 
-# Antigravity IDE (if installed)
-if [[ -d "$HOME/.antigravity-ide/antigravity-ide/bin" ]]; then
-    export PATH="$HOME/.antigravity-ide/antigravity-ide/bin:$PATH"
+# User bin directories
+export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+
+# pnpm (Homebrew version - not ~/.local/pnpm)
+# Remove any old pnpm installations that might conflict
+if [[ -d "$HOME/Library/pnpm" ]] && [[ -d "/opt/homebrew/bin" ]]; then
+    # Only use Homebrew pnpm, ignore local installation
+    unset PNPM_HOME
 fi
-
-# =============================================================================
-# Completions
-# =============================================================================
-
-# Dart CLI completion
-[[ -f $HOME/.dart-cli-completion/zsh-config.zsh ]] && . $HOME/.dart-cli-completion/zsh-config.zsh || true
-
-# =============================================================================
-# Aliases
-# =============================================================================
-
-# SSH shortcuts
-alias vps='ssh -i $HOME/Tech/seguridad/ssh/pedro root@158.220.116.111'
-alias andrew='ssh andrew@100.64.26.17'
-
-# Meta CLI
-alias meta="$HOME/.local/meta-ads-env/bin/meta"
 
 # =============================================================================
 # Shell Options

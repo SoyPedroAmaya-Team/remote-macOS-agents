@@ -14,19 +14,19 @@
 # Parse arguments
 AUTO_YES="${AUTO_YES:-0}"
 while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --yes|-y)
-            AUTO_YES=1
-            shift
-            ;;
-        --help|-h)
-            echo "Usage: $0 [--yes]"
-            exit 0
-            ;;
-        *)
-            shift
-            ;;
-    esac
+	case "$1" in
+	--yes | -y)
+		AUTO_YES=1
+		shift
+		;;
+	--help | -h)
+		echo "Usage: $0 [--yes]"
+		exit 0
+		;;
+	*)
+		shift
+		;;
+	esac
 done
 
 # Don't use set -e, we'll handle errors explicitly
@@ -43,7 +43,7 @@ source "${REPO_DIR}/lib/utils.sh"
 # =============================================================================
 
 if [[ "$AUTO_YES" == "1" ]]; then
-    confirm() { return 0; }  # Always return true
+	confirm() { return 0; } # Always return true
 fi
 
 # =============================================================================
